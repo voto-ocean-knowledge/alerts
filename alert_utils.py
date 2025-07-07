@@ -451,9 +451,10 @@ def sailbuoy_alert(ds, dispatch, t_step=15):
     if (ds.time.values.max() - ds.time.values.min()) / np.timedelta64(1, "h") < 24:
         _log.info(f"SB{platform_serial} M{mission} has just been deployed. Only leak emails")
         return
-    if ds.Warning[-t_step:].any():
-        var = "Warning"
-        if not len(np.unique(ds.Warning[-t_step:])) == 1:
+    var = "Warning"
+    ds[var] = ds[var].fillna(0)
+    if ds[var][-t_step:].any():
+        if not len(np.unique(ds[var][-t_step:])) == 1:
             ddict['alarm_source'] = var
             df = df_alarm[df_alarm['alarm_source'] == var]
             if df.empty:
@@ -462,6 +463,7 @@ def sailbuoy_alert(ds, dispatch, t_step=15):
                 _log.info(f"Already logged Sailbuoy warning {ddict['platform_id']} M{ddict['mission']}. Source: {ddict['alarm_source']}")
 
     var = "WithinTrackRadius"
+    ds[var] = ds[var].fillna(1)
     if not ds.WithinTrackRadius[-3].any():
         ddict['alarm_source'] = var
         df = df_alarm[df_alarm['alarm_source'] == var]
