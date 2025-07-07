@@ -194,3 +194,4 @@ cython_debug/
 .cursorindexingignore
 *secrets*
 .idea
+lastcheck_surface.txt

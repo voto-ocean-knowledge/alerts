@@ -229,6 +229,33 @@ def elks_call(
         _log.error(
             f"failed elks call {response.text} to {recipient}. {ddict['glider']},{ddict['mission']},{ddict['cycle']},{ddict['security_level']},call_{user},{ddict['alarm_source']}"
         )
+        
+def phone_test(recipient, fake=True, message="Hi this is a test message from VOTO alert system"):
+    data = {
+        "from": "VOTOalert",
+        "to": recipient,
+        "message": message,
+    }
+    if fake:
+        data["dryrun"] = "yes"
+    response = requests.post(
+        "https://api.46elks.com/a1/sms",
+        auth=(secrets_dict["elks_username"], secrets_dict["elks_password"]),
+        data=data,
+    )
+    print(response.text)
+    if not fake:
+        response = requests.post(
+            "https://api.46elks.com/a1/calls",
+            auth=(secrets_dict["elks_username"], secrets_dict["elks_password"]),
+            data={
+                "from": secrets_dict["elks_phone"],
+                "to": recipient,
+                "voice_start": '{"play":"https://callumrollo.com/files/frederik_short.mp3"}',
+                "timeout": 60,
+            },
+        )
+        print(response.text)
 
 
 def contact_pilot(ddict, fake=True):
@@ -440,13 +467,10 @@ def sailbuoy_alert(ds, dispatch, t_step=15):
         df = df_alarm[df_alarm['alarm_source'] == var]
         df = df[df.datetime > datetime.datetime.now() - datetime.timedelta(hours=3)]
         if df.empty:
-            contact_pilot(ddict, fake=True)
             mailer("Sailbuoy-off-track", f"Sailbuoy {ddict['platform_id']} off track", recipient=dispatch.slack_mail)
+            contact_pilot(ddict, fake=True) # Just to log this event! Never sends a call/text
         else:
             _log.info(
                 f"Already warned for off track in last 3 hours {ddict['platform_id']} M{ddict['mission']}. Source: {ddict['alarm_source']}")
 
 
-if __name__ == "__main__":
-    print(extra_alarm_recipients())
-    # surfacing_alerts(fake=True)
