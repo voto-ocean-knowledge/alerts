@@ -111,7 +111,7 @@ def find_previous_action(df, ddict):
     df = df[~df.alarm_source.str.contains("surf")]
     if df.empty:
         return df
-    df = df[(df.mission == ddict["mission"]) & (df.cycle == ddict["cycle"])]
+    df = df[(df.mission == ddict["mission"]) & (df.cycle == ddict["cycle"])  & (df.security_level == ddict["security_level"])]
     if df.empty:
         return pd.DataFrame()
     df = df.sort_values("datetime")
