@@ -95,7 +95,7 @@ extra_alarm_numbers_surface = []
 try:
     extra_alarm_numbers, extra_alarm_numbers_surface = extra_alarm_recipients()
 except:
-    mailer("Failed extra numbers", "Could not do it")
+    mailer("failed extra numbers", "Could not extract extra numbers")
 
 
 def setup_logger(name, log_file, level=logging.INFO, formatter=format_basic):
@@ -131,6 +131,8 @@ def parse_mrs(comm_log_file):
         _log.warning(f"old logfile type in {comm_log_file}. skipping")
         return pd.DataFrame()
     df_mrs = df_in[df_in["everything"].str.contains("SEAMRS")].copy()
+    # catch short, possibly malformed MRS strings
+    df_mrs = df_mrs[df_mrs.everything.astype(str).str.len() > 90]
     parts = df_mrs.everything.str.split(";", expand=True)
     df_mrs["datetime"] = pd.to_datetime(parts[0].str[1:-1], dayfirst=True)
     df_mrs["message"] = parts[5]
@@ -304,8 +306,8 @@ def parse_mail_alarms():
     else:
         glider_alerts = {}
 
-    # Check 10 newest emails
-    for i in id_list[-10:]:
+    # Check 3 newest emails
+    for i in id_list[-3:]:
         result, data = mail.fetch(i, "(RFC822)")
         for response_part in data:
             if isinstance(response_part, tuple):
@@ -355,9 +357,9 @@ def surfacing_alerts(fake=True):
     id_list = mail_ids.split()
     first_email_id = int(id_list[0])
     latest_email_id = int(id_list[-1])
-    # Cut to last 10 emails
-    if len(id_list) > 10:
-        first_email_id = int(id_list[-10])
+    # Cut to last 3 emails
+    if len(id_list) > 3:
+        first_email_id = int(id_list[-3])
 
     # Check which emails have arrived since the last run of this script
     unread_emails = []
@@ -461,7 +463,7 @@ def sailbuoy_alert(ds, dispatch, t_step=15):
                 contact_pilot(ddict, fake=dispatch.dummy_calls)
             else:
                 _log.info(f"Already logged Sailbuoy warning {ddict['platform_id']} M{ddict['mission']}. Source: {ddict['alarm_source']}")
-
+    return  # no track radius checks for now
     var = "WithinTrackRadius"
     ds[var] = ds[var].fillna(1)
     if not ds.WithinTrackRadius[-3].any():
@@ -474,5 +476,4 @@ def sailbuoy_alert(ds, dispatch, t_step=15):
         else:
             _log.info(
                 f"Already warned for off track in last 3 hours {ddict['platform_id']} M{ddict['mission']}. Source: {ddict['alarm_source']}")
-
 

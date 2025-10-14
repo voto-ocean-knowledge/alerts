@@ -197,12 +197,7 @@ if __name__ == "__main__":
     fail = False
     with open(fail_file, 'w') as fout:
         fout.write(str(fail_count))
-    try:
-        parse_mail_alarms()
-    except:
-        _log.error("failed to process mail alarms")
-        fail = True
-        mailer("failed alerts", "Failed to execute mail alarms")
+
     base_dir = Path(secrets_dict["base_data_dir"])
     all_glider_dirs = list(base_dir.glob("SEA*"))
     all_glider_dirs.sort()
@@ -224,12 +219,6 @@ if __name__ == "__main__":
     fake = False
     if secrets_dict["dummy_calls"] == "True":
         fake = True
-    try:
-        surfacing_alerts(fake=fake)
-    except:
-        _log.error("failed to process mail alarms")
-        mailer("failed alerts", "Failed to execute surfacing alerts")
-        fail = True
 
     ncs = Path("/data/sailbuoy/nrt_proc").glob("*.nc")
     _log.info("START sailbuoy")
