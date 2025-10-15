@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import xarray as xr
 from pathlib import Path
 import datetime
@@ -89,6 +90,13 @@ class Dispatcher:
             _log.info(f"no new lines from {self.platform_id}")
             return False
         self.alarm_dict = df.iloc[-1].to_dict()
+        df = df[df.cycle == df.cycle.max()]
+        surface_time = df.datetime.max() - df.datetime.min()
+        if surface_time > np.timedelta64(45, 'm'):
+            self.alarm_source = "Glider on surface for too long"
+            _log.info(f"glider at surface for {surface_time}. will alarm")
+            self.alarm_dict["security_level"] = 1048576
+            return True
         if df[df.alarm].empty:
             _log.info(f"No alarms for {self.platform_id}")
             return False
