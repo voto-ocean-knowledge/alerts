@@ -220,9 +220,9 @@ if __name__ == "__main__":
             dispatch.dummy_calls = True
         try:
             dispatch.execute()
-        except:
+        except Exception as e:
             _log.error("failed to process glider alarms")
-            mailer("failed alerts", f"Failed to execute {platform}")
+            mailer("failed alerts", f"Failed to execute {platform}. Error: {e}")
 
     fake = False
     if secrets_dict["dummy_calls"] == "True":
@@ -239,9 +239,9 @@ if __name__ == "__main__":
                 dispatch.dummy_calls = True
             dispatch.load_alarm_log()
             sailbuoy_alert(ds, dispatch)
-        except:
+        except Exception as e:
             _log.error("failed to process sailbuoy alarms")
-            mailer("failed alerts", f"Failed to execute alerts for {nc}")
+            mailer("failed alerts", f"Failed to execute alerts for {nc}. Error: {e}")
     _log.info("END SAILBUOY")
 
     if not fail:
