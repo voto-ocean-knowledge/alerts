@@ -32,6 +32,8 @@ def main():
         new_mail = True
     if not new_mail:
         _log.info("No new mail. stop processing")
+        with open(fail_file, 'w') as fout:
+            fout.write(str(0))
         return
     try:
         parse_mail_alarms()
