@@ -288,6 +288,34 @@ with open(script_dir / "email_secrets.json") as json_file:
     secrets = json.load(json_file)
 
 
+def check_if_new_mail():
+    # Check gmail account for any new emails
+    subject_file = Path("/data/log/last_mail_subject.txt")
+    if subject_file.exists():
+        subject = subject_file.read_text()
+    else:
+        with open(subject_file, 'w') as fout:
+            fout.write(str("nothing"))
+        return True
+    mail = imaplib.IMAP4_SSL("imap.gmail.com")
+    mail.login(secrets["email_username"], secrets["email_password"])
+    mail.select("inbox")
+    result, data = mail.search(None, 'ALL')
+    mail_id = data[0].split()[-1]
+    __, data = mail.fetch(mail_id, "(RFC822)")
+    email_subject = "willnevermatch"
+    for response_part in data:
+        if isinstance(response_part, tuple):
+            msg = email.message_from_bytes(response_part[1])
+            email_subject = msg["subject"]
+    if subject == email_subject:
+        return False
+    with open(subject_file, 'w') as fout:
+        _log.info(f"Most recent email: {email_subject}")
+        fout.write(email_subject)
+    return True
+
+
 def parse_mail_alarms():
     # Check gmail account for emails
     start = datetime.datetime.now()

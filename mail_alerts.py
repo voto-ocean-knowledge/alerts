@@ -6,14 +6,12 @@ from alert_utils import (
     parse_mail_alarms,
     surfacing_alerts,
     mail_recipient,
-    mailer,
+    mailer, check_if_new_mail,
 )
 
 _log = setup_logger("core_log", "/data/log/mail_alarms.log", level=logging.DEBUG)
 
-
-if __name__ == "__main__":
-    _log.info("******** START CHECK **********")
+def main():
     fail_file = Path("/data/log/mail_alarm_fails.txt")
     if fail_file.exists():
         with open(fail_file) as fin:
@@ -28,6 +26,13 @@ if __name__ == "__main__":
     fail = False
     with open(fail_file, 'w') as fout:
         fout.write(str(fail_count))
+    try:
+        new_mail = check_if_new_mail()
+    except:
+        new_mail = True
+    if not new_mail:
+        _log.info("No new mail. stop processing")
+        return
     try:
         parse_mail_alarms()
     except:
@@ -52,4 +57,8 @@ if __name__ == "__main__":
     with open(fail_file, 'w') as fout:
         fout.write(str(fail_count))
 
+
+if __name__ == "__main__":
+    _log.info("******** START CHECK **********")
+    main()
     _log.info("******** COMPLETE CHECK *********")
