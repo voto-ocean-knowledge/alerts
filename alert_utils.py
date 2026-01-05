@@ -586,3 +586,8 @@ def parse_schedule():
             recipient=mail_recipient,
         )
     df.to_csv("/data/log/schedule.csv", sep=";")
+    raw_date = datetime.datetime.now()
+    date_string = raw_date.isoformat().replace(":", "").split('.')[0]
+    fn = f"schedule_{date_string}.csv"
+    df.to_csv(f"/data/log/old_schedules/{fn}", sep=";")
+
