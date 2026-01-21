@@ -92,6 +92,7 @@ class Dispatcher:
         self.alarm_dict = df.iloc[-1].to_dict()
         df = df[df.cycle == df.cycle.max()]
         surface_time = df.datetime.max() - df.datetime.min()
+        _log.info(f"surface-check cycle {df.cycle.max()} glider surface for {str(surface_time)[7:15]} {str(df.datetime.values[0])[:19]} - {str(df.datetime.values[-1])[:19]}")
         if surface_time > np.timedelta64(45, 'm'):
             self.alarm_source = "Glider on surface for too long"
             _log.info(f"glider at surface for {surface_time}. will alarm")
@@ -207,7 +208,7 @@ if __name__ == "__main__":
         fout.write(str(fail_count))
 
     base_dir = Path(secrets_dict["base_data_dir"])
-    all_glider_dirs = list(base_dir.glob("SEA*"))
+    all_glider_dirs = list(base_dir.glob("SEA*")) +  list(base_dir.glob("SHW*"))
     all_glider_dirs.sort()
     for glider_dir in all_glider_dirs:
         platform = glider_dir.parts[-1]

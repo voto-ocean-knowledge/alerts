@@ -506,7 +506,7 @@ def parse_schedule():
     schedule = pd.read_csv(
         "https://docs.google.com/spreadsheets/d/"
         + secrets_dict["google_sheet_id"]
-        + "/export?gid=0&format=csv",
+        + "/export?gid=722590891&format=csv",
         index_col=0,
     ).rename(
         {

@@ -42,7 +42,7 @@ def main():
         fail = True
         mailer("failed alerts", "Failed to execute mail alarms")
     base_dir = Path(secrets_dict["base_data_dir"])
-    all_glider_dirs = list(base_dir.glob("SEA*"))
+    all_glider_dirs = list(base_dir.glob("SEA*")) +  list(base_dir.glob("SHW*"))
     all_glider_dirs.sort()
     fake = False
     if secrets_dict["dummy_calls"] == "True":
