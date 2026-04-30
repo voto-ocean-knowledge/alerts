@@ -22,6 +22,9 @@ from alert_utils import (
 )
 
 _log = setup_logger("core_log", "/data/log/alarms.log", level=logging.DEBUG)
+setup_logger("surface", "/data/log/surface.log")
+surface_log = logging.getLogger(name="surface")
+
 
 
 class Dispatcher:
@@ -92,7 +95,7 @@ class Dispatcher:
         self.alarm_dict = df.iloc[-1].to_dict()
         df = df[df.cycle == df.cycle.max()]
         surface_time = df.datetime.max() - df.datetime.min()
-        _log.info(f"surface-check cycle {df.cycle.max()} glider surface for {str(surface_time)[7:15]} {str(df.datetime.values[0])[:19]} - {str(df.datetime.values[-1])[:19]}")
+        surface_log.info(f"{self.platform_id}, cycle {str(df.cycle.max()).zfill(4)}, surface for {str(surface_time)[7:15]}, {str(df.datetime.values[0])[:19]} - {str(df.datetime.values[-1])[:19]}")
         if surface_time > np.timedelta64(45, 'm'):
             self.alarm_source = "Glider on surface for too long"
             _log.info(f"glider at surface for {surface_time}. will alarm")
@@ -171,7 +174,7 @@ class Dispatcher:
         if previous_action == "None":
             contact_pilot(ddict, fake=self.dummy_calls)
 
-        if "pilot" in previous_action:
+        if "pilot" in previous_action or "volunteer" in previous_action:
             _log.warning(
                 f"Will we escalate? {df_action.iloc[-1].to_dict()['datetime']} "
             )
