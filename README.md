@@ -2,6 +2,18 @@
 
 The alert system monitors the health of deployed VOTO platforms (SeaExplorer gliders and Sailbuoys) and alerts the on-duty pilot by SMS and phone call when something goes wrong. If the alarm is not dealt with, it escalates to the on-call supervisor. Texts and calls are sent through the [46elks](https://46elks.com) API.
 
+
+### When an alert is sent
+
+| Reason | Main Pilot | On-call | Slack #alarms |
+|---|---|---|---|
+| SeaExplorer alerts | Immediately | After 30 min if no response from Main Pilot | Immediately |
+| SeaExplorer on surface | After 45 min (Internal alarm code 1048576) | - | - |
+| Sailbouy "Leak", "BigLeak" or "SailRotation" =1 | Immediately | Immediately | ? |
+| Sailbouy "Warning"=1 | Immediately | - | ? |
+| Sailbouy "WithinTrackRadius"=0 | - | - | Immediately then mute for 3h (currently disabled) |
+| Piloting schedule - name, time or something else not filled in correctly | - | . | Immediately and every 5 min until corrected |
+
 The system is a set of scripts run at regular intervals by cron:
 
 | Script | Purpose |
