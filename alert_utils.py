@@ -11,6 +11,17 @@ import re
 import subprocess
 import numpy as np
 import pytz
+from email import policy
+
+
+def get_email_body(raw_bytes):
+    msg = email.message_from_bytes(raw_bytes, policy=policy.default)
+    body = msg.get_body(preferencelist=("plain", "html"))
+    if body is None:
+        return ""
+    return body.get_content()
+
+
 
 _log = logging.getLogger(name="core_log")
 
@@ -164,6 +175,8 @@ def elks_text(ddict, recipient=pilot_phone, user="pilot", fake=True):
     alarm_log = logging.getLogger(name=ddict["platform_id"])
     if "SB" in ddict['platform_id']:
         message = f"Sailbuoy warning {ddict['platform_id']} M{ddict['mission']}. Source: {ddict['alarm_source']}"
+    elif 'PD' in ddict['platform_id']:
+        message = f"C-Star alert {ddict['platform_id']} {ddict['cycle']} {ddict['alarm_source']}]"
     elif ddict["security_level"] == 0:
         message = f"SURFACING {ddict['platform_id']} M{ddict['mission']} cycle {ddict['cycle']}. Source: {ddict['alarm_source']}"
     else:
@@ -357,6 +370,67 @@ def parse_mail_alarms():
         json.dump(glider_alerts, f, indent=4)
     elapsed = datetime.datetime.now() - start
     _log.info(f"Completed mail check in {elapsed.seconds} seconds")
+
+
+def parse_cstar_mail_alarms():
+    # Check gmail account for emails
+    start = datetime.datetime.now()
+    mail = imaplib.IMAP4_SSL("imap.gmail.com")
+    mail.login(secrets["email_username"], secrets["email_password"])
+    mail.select("inbox")
+    result, data = mail.search(None, '(SUBJECT "C-Star Alert Incident")')
+    mail_ids = data[0]
+
+    id_list = mail_ids.split()
+
+    if mail_alarms_json.exists():
+        with open(mail_alarms_json, "r") as f:
+            glider_alerts = json.load(f)
+    else:
+        glider_alerts = {}
+
+    # Check 3 newest emails
+    for i in id_list[-3:]:
+        result, data = mail.fetch(i, "(RFC822)")
+        for response_part in data:
+            if isinstance(response_part, tuple):
+                msg = email.message_from_bytes(response_part[1])
+                email_subject = msg["subject"]
+                if "fw" in email_subject.lower():
+                    email_subject = email_subject[4:]
+                email_from = msg["from"]
+                # If email is from alseamar and subject contains ALARM, make some noise
+                if (
+                    "oshendata" in email_from
+                    or "calglider" in email_from
+                    and "Alert" in email_subject
+                ):
+                    _log.debug(f"email alarm parsed {email_subject}")
+                    body = get_email_body(response_part[1])
+                    body_parts = body.split('\n')
+                    reason = body_parts[-1]
+                    parts = email_subject.split(' ')
+                    platform_id = parts[-1]
+                    mission = 1
+                    cycle = int(parts[-3][1:])
+                    alarm = 1
+                    if glider_alerts.get(platform_id, []) == [mission, cycle, alarm]:
+                        _log.info(f'Seen this before {platform_id} {[mission, cycle, alarm]}')
+                        continue
+                    glider_alerts[platform_id] = (mission, cycle, alarm)
+                    ddict = {
+                        'platform_id': platform_id,
+                        'glider': int(platform_id[2:]),
+                        'cycle': cycle,
+                        'alarm_source': reason,
+                        'mission': mission,
+                        'security_level': alarm
+                    }
+                    contact_pilot(ddict)
+    with open(mail_alarms_json, "w") as f:
+        json.dump(glider_alerts, f, indent=4)
+    elapsed = datetime.datetime.now() - start
+    _log.info(f"Completed oshen mail check in {elapsed.seconds} seconds")
 
 
 def surfacing_alerts(fake=True):
@@ -591,3 +665,8 @@ def parse_schedule():
     fn = f"schedule_{date_string}.csv"
     df.to_csv(f"/data/log/old_schedules/{fn}", sep=";")
 
+
+if __name__ == "__main__":
+    _log = setup_logger("core_log", "/data/log/alarms.log", level=logging.DEBUG)
+
+    parse_cstar_mail_alarms()

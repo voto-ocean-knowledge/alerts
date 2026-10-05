@@ -6,6 +6,7 @@ import datetime
 import json
 import logging
 from alert_utils import (
+    parse_cstar_mail_alarms,
     setup_logger,
     format_alarm,
     secrets_dict,
@@ -18,7 +19,7 @@ from alert_utils import (
     surfacing_alerts,
     mail_recipient, slack_mail,
     mailer,
-    sailbuoy_alert
+    sailbuoy_alert,
 )
 
 _log = setup_logger("core_log", "/data/log/alarms.log", level=logging.DEBUG)
@@ -247,6 +248,8 @@ if __name__ == "__main__":
             _log.error("failed to process sailbuoy alarms")
             mailer("failed alerts", f"Failed to execute alerts for {nc}. Error: {e}")
     _log.info("END SAILBUOY")
+
+    parse_cstar_mail_alarms()
 
     if not fail:
         fail_count = 0
