@@ -414,7 +414,11 @@ def parse_cstar_mail_alarms():
                     mission = 1
                     cycle = int(parts[-3][1:])
                     alarm = 1
-                    if glider_alerts.get(platform_id, []) == [mission, cycle, alarm]:
+                    if glider_alerts.get(platform_id, []):
+                        previous_cycle = glider_alerts.get(platform_id, [])[1]
+                    else:
+                        previous_cycle = 0
+                    if alarm <= previous_cycle:
                         _log.info(f'Seen this before {platform_id} {[mission, cycle, alarm]}')
                         continue
                     glider_alerts[platform_id] = (mission, cycle, alarm)
