@@ -65,6 +65,13 @@ if type(pilot_phone) is str:
     pilot_phone = pilot_phone.replace(" ", "")
 if type(supervisor_phone) is str:
     supervisor_phone = supervisor_phone.replace(" ", "")
+if 'pilot-c-star' in row.keys():
+    cstar_phone = row["pilot-c-star"]
+
+    if type(cstar_phone) is str:
+        cstar_phone = cstar_phone.replace(" ", "")
+else:
+    cstar_phone = ""
 
 def extra_alarm_recipients():
     votoweb_dir = secrets_dict["votoweb_dir"]
@@ -284,6 +291,15 @@ def contact_pilot(ddict, fake=True):
             elks_call(ddict, recipient=extra_number, fake=fake, user="self-volunteered")
 
 
+def contact_cstar_pilot(ddict, fake=True):
+    if not cstar_phone:
+        _log.warning("No cstar pilot on duty: no action")
+        return
+    _log.warning("PILOT")
+    elks_text(ddict, recipient=cstar_phone, user="cstar-pilot", fake=fake)
+    elks_call(ddict, recipient=cstar_phone, user="cstar-pilot", fake=fake)
+
+
 def contact_supervisor(ddict, fake=True):
     if not supervisor_phone:
         _log.warning("No supervisor on duty: no action")
@@ -430,7 +446,7 @@ def parse_cstar_mail_alarms():
                         'mission': mission,
                         'security_level': alarm
                     }
-                    contact_pilot(ddict)
+                    contact_cstar_pilot(ddict)
     with open(mail_alarms_json, "w") as f:
         json.dump(glider_alerts, f, indent=4)
     elapsed = datetime.datetime.now() - start
@@ -604,10 +620,13 @@ def parse_schedule():
                 schedule[f"handover-{shift}"] = (
                     time_parts[0].astype(float) + time_parts[1].astype(float) / 60
                 )
+            schedule.loc[schedule[f"handover-{shift}"] > 24, f"handover-{shift}"] = np.nan
+            schedule.loc[schedule[f"handover-{shift}"] < 0, f"handover-{shift}"] = np.nan
+        else:
+            schedule[f"handover-{shift}"] = np.nan
         schedule.drop(f"handover-{shift}-raw", axis=1, inplace=True)
 
-        schedule.loc[schedule[f"handover-{shift}"] > 24, f"handover-{shift}"] = np.nan
-        schedule.loc[schedule[f"handover-{shift}"] < 0, f"handover-{shift}"] = np.nan
+
     local_now = datetime.datetime.now().astimezone(pytz.timezone("Europe/Stockholm"))
     offset_dt = local_now.utcoffset()
     offset = int(offset_dt.seconds / 3600)
@@ -622,6 +641,7 @@ def parse_schedule():
             {
                 "pilot": [row["pilot-day"]],
                 "supervisor": [row["on-call"]],
+                "pilot-c-star": [row["pilot-c-star"]],
                 #'surface-text': [row['surface-text-day']],
             },
             index=[day_start],
@@ -633,6 +653,7 @@ def parse_schedule():
             {
                 "pilot": [row["pilot-night"]],
                 "supervisor": [row["on-call"]],
+                "pilot-c-star": [row["pilot-c-star"]],
                 #'surface-text': [row['surface-text-night']],
             },
             index=[night_start],
